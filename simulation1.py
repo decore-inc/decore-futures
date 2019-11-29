@@ -52,4 +52,4 @@ data = np.array(result)
 df2 = pd.DataFrame(
     {'size': data[:, 0], 'ft_amount': data[:, 1], 'price': data[:, 2], 'pnl': data[:, 3], 'buy': data[:, 4], 'sell': data[:, 5], 'timestamp': data[:, 6], 'rolled_pnl': data[:, 7], 'rolled_sell': data[:, 8], 'rolled_buy': data[:, 9]},
     columns=['size', 'ft_amount', 'price', 'pnl', 'buy', 'sell', 'timestamp', 'rolled_pnl', 'rolled_sell', 'rolled_buy'])
-df2.to_csv('results/sim1-prices-pnl.csv', index=None, header=True)
+df2.to_csv('results/sim1.csv', index=None, header=True)
