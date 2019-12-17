@@ -51,8 +51,7 @@ class AMM:
         self.base_token_in_pool += base_token_from_buyer
         p_token_price = base_token_from_buyer / (self.p_token_in_pool - self.supply_invariant/self.base_token_in_pool)
         base_token_price = 1 / p_token_price
-        p_token_to_buyer = - base_token_from_buyer * base_token_price
-        base_token_from_buyer = - p_token_to_buyer * p_token_price
+        p_token_to_buyer = - base_token_from_buyer / p_token_price
         self.p_token_in_pool += p_token_to_buyer
         return Trade(
             p_token_to_buyer,
