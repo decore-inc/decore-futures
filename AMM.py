@@ -40,6 +40,9 @@ class AMM:
         a = 1
         b = self.base_token_in_pool - self.p_token_in_pool * target_price
         c = - self.p_token_in_pool * target_price * self.base_token_in_pool + self.supply_invariant * target_price
+        """
+        c = 0 because self.p_token_in_pool * self.base_token_in_pool = self.supply_invariant
+        """
         _result = sqrt(b ** 2 - 4 * a * c)
         results = [(-b + _result) / (2 * a), (-b - _result) / (2 * a)]
         mm_base_token_from_buyer = max(results, key=abs)  # find the nearest to zero
@@ -97,9 +100,8 @@ class AMM:
             self.mm_total_sell += trade.sell
             self.mm_total_pnl += trade.pnl
             self.mm_total_pnl_rate = self.mm_total_pnl / (self.mm_total_buy + self.mm_total_sell)
-        else:
-            self.total_buy += trade.buy
-            self.total_sell += trade.sell
-            self.total_pnl += trade.pnl
-            self.total_pnl_rate = self.total_pnl / (self.total_buy + self.total_sell)
+        self.total_buy += trade.buy
+        self.total_sell += trade.sell
+        self.total_pnl += trade.pnl
+        self.total_pnl_rate = self.total_pnl / (self.total_buy + self.total_sell)
         return trade
