@@ -1,10 +1,10 @@
 from AMMFactory import AMMFactory
 
-source_symbol = 'XBTU19'
+source_symbol = 'XBTH19'
 init_base_token_in_pool = 10 ** 8
-twap_price = 3812
-delta = 0.01
-g = 0.1
+twap_price = 3602
+delta = 0.002
+g = 0.01
 limit = 100
 
 # source_symbol = input(f'source_symbol({source_symbol}): ')

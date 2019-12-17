@@ -22,8 +22,8 @@ class AMM:
         self.supply_invariant = self.base_token_in_pool * self.p_token_in_pool
         self.q = 0
 
-    def make_trade(self, p_token_to_buyer, target_price, timestamp, is_mm=False):
-        trade = self._bonding_curve(p_token_to_buyer, timestamp, target_price, is_mm)
+    def make_trade(self, base_token_to_buyer, target_price, timestamp, is_mm=False):
+        trade = self._bonding_curve(base_token_to_buyer, timestamp, target_price, is_mm)
         trade = self._ans_model(trade)
         trade = self._pnl(trade)
         self.trades.append(trade)
@@ -32,29 +32,28 @@ class AMM:
     def market_maker(self, target_price, timestamp):
         """
         Market maker should buy or sell mm_p_token_to_buyer to let market price near to the target_price.
-        To get mm_p_token_to_buyer from formulas below:
-        base_token_price = mm_p_token_to_buyer / (base_token_in_pool - (supply_invariant / (p_token_in_pool + mm_p_token_to_buyer)))
-        target_price = 1 / base_token_price
-        Resolve this Quadratic Equation: ax^2 + bx + c = 0
-        target_price * mm_p_token_to_buyer^2 + (target_price * p_token_in_pool  - base_token_in_pool)* mm_p_token_to_buyer - base_token_in_pool * p_token_in_pool + supply_invariant = 0
+        To get mm_p_token_to_buyer as X from formulas below:
+        target_price = mm_base_token_from_buyer /( (p_token_in_pool - supply_invariant / (base_token_in_pool + mm_base_token_from_buyer)))
+        Resolve this Quadratic Equation: aX^2 + bX + c = 0
+        X**2 + (base_token_in_pool - p_token_in_pool * target_price) * X - p_token_in_pool * target_price * base_token_in_pool + supply_invariant * target_price = 0
         """
-        a = target_price
-        b = target_price * self.p_token_in_pool - self.base_token_in_pool
-        c = - self.base_token_in_pool * self.p_token_in_pool + self.supply_invariant
+        a = 1
+        b = self.base_token_in_pool - self.p_token_in_pool * target_price
+        c = - self.p_token_in_pool * target_price * self.base_token_in_pool + self.supply_invariant * target_price
         _result = sqrt(b ** 2 - 4 * a * c)
         results = [(-b + _result) / (2 * a), (-b - _result) / (2 * a)]
         mm_p_token_to_buyer = max(results, key=abs)  # find the nearest to zero
         mm_p_token_to_buyer = round(mm_p_token_to_buyer)
         if mm_p_token_to_buyer != 0:
-            trade = self.make_trade(mm_p_token_to_buyer, target_price, timestamp, True)
-            self.trades.append(trade)
+            self.make_trade(mm_p_token_to_buyer, target_price, timestamp, True)
 
-    def _bonding_curve(self, p_token_to_buyer, timestamp, target_price, is_mm=False):
-        self.p_token_in_pool += p_token_to_buyer
-        base_token_price = p_token_to_buyer / (self.base_token_in_pool - (self.supply_invariant / self.p_token_in_pool))
-        p_token_price = 1 / base_token_price
-        base_token_from_buyer = - p_token_to_buyer * p_token_price
+    def _bonding_curve(self, base_token_from_buyer, timestamp, target_price, is_mm=False):
         self.base_token_in_pool += base_token_from_buyer
+        p_token_price = base_token_from_buyer / (self.p_token_in_pool - self.supply_invariant/self.base_token_in_pool)
+        base_token_price = 1 / p_token_price
+        p_token_to_buyer = - base_token_from_buyer * base_token_price
+        base_token_from_buyer = - p_token_to_buyer * p_token_price
+        self.p_token_in_pool += p_token_to_buyer
         return Trade(
             p_token_to_buyer,
             self.p_token_in_pool,
