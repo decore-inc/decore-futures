@@ -25,7 +25,7 @@ for chunk in pd.read_csv(filename, chunksize=chunksize):
     df = pd.DataFrame(chunk, columns=['size', 'side', 'price', 'timestamp'])
     count = 0
     for delta in df.values:
-        if count > 100: break
+        # if count > 100: break
 
         side = delta[1]
         p_token_to_buyer = -delta[0] if side == 'Buy' else delta[0]  # Negative if Buy
@@ -129,14 +129,25 @@ for chunk in pd.read_csv(filename, chunksize=chunksize):
             ])
 
         count += 1
+        
 total_buy = rolled_buy
 total_sell = rolled_sell
 total_pnl = rolled_buy - rolled_sell
 total_pnl_rate = total_pnl / (total_buy + total_sell)
-print(total_buy)
-print(total_sell)
-print(total_pnl)
-print(total_pnl_rate)
+print(f'total_buy = {rolled_buy}')
+print(f'total_sell = {total_sell}')
+print(f'total_pnl = {total_pnl}')
+print(f'total_pnl_rate = {total_pnl_rate}')
+
+mm_total_buy = mm_rolled_buy
+mm_total_sell = mm_rolled_sell
+mm_total_pnl = mm_rolled_buy - mm_rolled_sell
+mm_total_pnl_rate = mm_total_pnl / (mm_total_buy + mm_total_sell)
+print(f'mm_total_buy = {mm_rolled_buy}')
+print(f'mm_total_sell = {mm_total_sell}')
+print(f'mm_total_pnl = {mm_total_pnl}')
+print(f'mm_total_pnl_rate = {mm_total_pnl_rate}')
+
 data = np.array(result)
 df2 = pd.DataFrame(
     {
