@@ -3,11 +3,11 @@ import pandas as pd
 import numpy as np
 from fractions import Fraction
 
-filename = 'sources/TRXZ19.csv'
+filename = 'sources/XBTH19_trade.csv'
 chunksize = 10 ** 8
-init_base_token_in_pool = 10.0 ** 1
+init_base_token_in_pool = 10.0 ** 8
 base_token_in_pool = init_base_token_in_pool
-TWAP_price = 2.41 * 10 ** -6
+TWAP_price = 3602
 p_token_in_pool = base_token_in_pool / TWAP_price
 supply_invariant = base_token_in_pool * p_token_in_pool
 q = 0
@@ -84,7 +84,7 @@ for chunk in pd.read_csv(filename, chunksize=chunksize):
         c = - base_token_in_pool * p_token_in_pool + supply_invariant
         _result = sqrt(b ** 2 - 4 * a * c)
         results = [(-b + _result) / (2 * a), (-b - _result) / (2 * a)]
-        mm_p_token_to_buyer = max(results, key=abs)  # find the nearest to zero
+        mm_p_token_to_buyer = max(results, key=abs) # find the nearest to zero
         mm_p_token_to_buyer = round(mm_p_token_to_buyer)
         if mm_p_token_to_buyer != 0:
             is_mm = True
@@ -176,4 +176,4 @@ df2 = pd.DataFrame(
              'target_price'])
 init_base_token_in_pool = '{:.2e}'.format(init_base_token_in_pool)
 TWAP = '{:.2e}'.format(TWAP_price)
-df2.to_csv(f'results/TRXZ19-base_token_in_pool={init_base_token_in_pool}-TWAP={TWAP}-delta={upper_delta}-G={G}.csv', index=None, header=True)
+df2.to_csv(f'results/XBTH19-base_token_in_pool={init_base_token_in_pool}-TWAP={TWAP}-delta={upper_delta}-G={G}.csv', index=None, header=True)
