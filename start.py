@@ -2,7 +2,7 @@ from AMMFactory import AMMFactory
 
 source_symbol = 'XBTH19'
 init_base_token_in_pool = 10 ** 8
-twap_price = 3602
+twap_price = 6850
 delta = 0.002
 g = 0.01
 fee_rate = 0.05 * 10 ** -2

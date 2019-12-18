@@ -47,14 +47,11 @@ class AMM:
         """
         a = 1
         b = self.base_token_in_pool - self.p_token_in_pool * target_price
-        """
         c = - self.p_token_in_pool * target_price * self.base_token_in_pool + self.supply_invariant * target_price
-        c = 0 because self.p_token_in_pool * self.base_token_in_pool = self.supply_invariant
-        _result = sqrt(b ** 2 - 4 * a * c)
+
+        _result = sqrt(abs(b ** 2 - (4 * a * c)))
         results = [(-b + _result) / (2 * a), (-b - _result) / (2 * a)]
-        result of x is not zero = (- b - b) / 2 * a
-        """
-        mm_base_token_from_buyer = - b / a
+        mm_base_token_from_buyer = min(results, key=abs)
         mm_base_token_from_buyer = round(mm_base_token_from_buyer)
         if mm_base_token_from_buyer != 0:
             self.make_trade(mm_base_token_from_buyer, target_price, timestamp, True)
