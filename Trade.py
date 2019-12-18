@@ -4,6 +4,8 @@ class Trade:
                  p_token_in_pool,
                  p_token_price,
                  base_token_from_buyer,
+                 base_token_from_buyer_without_fee,
+                 fee,
                  base_token_in_pool,
                  base_token_price,
                  long_p_token_price,
@@ -21,7 +23,10 @@ class Trade:
         self.p_token_to_buyer = p_token_to_buyer
         self.p_token_in_pool = p_token_in_pool
         self.p_token_price = p_token_price
+        self.target_price = target_price
         self.base_token_from_buyer = base_token_from_buyer
+        self.base_token_from_buyer_without_fee = base_token_from_buyer_without_fee
+        self.fee = fee
         self.base_token_in_pool = base_token_in_pool
         self.base_token_price = base_token_price
         self.long_p_token_price = long_p_token_price
@@ -34,7 +39,6 @@ class Trade:
         self.rolled_buy = rolled_buy
         self.rolled_sell = rolled_sell
         self.is_mm = is_mm
-        self.target_price = target_price
         self.q = q
 
 

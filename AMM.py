@@ -4,14 +4,21 @@ from Trade import Trade
 
 class AMM:
     trades = []
-    total_buy = 0
-    total_sell = 0
-    total_pnl = 0
-    total_pnl_rate = 0
+    auto_total_buy = 0
+    auto_total_sell = 0
+    auto_total_pnl = 0
+    auto_total_pnl_rate = 0
+    auto_total_fee = 0
     mm_total_buy = 0
     mm_total_sell = 0
     mm_total_pnl = 0
     mm_total_pnl_rate = 0
+    mm_total_fee = 0
+    total_buy = 0
+    total_sell = 0
+    total_pnl = 0
+    total_pnl_rate = 0
+    total_fee = 0
 
     def __init__(self, init_base_token_in_pool, twap_price, delta, g, fee_rate):
         self.base_token_in_pool = init_base_token_in_pool
@@ -53,9 +60,15 @@ class AMM:
             self.make_trade(mm_base_token_from_buyer, target_price, timestamp, True)
 
     def _bonding_curve(self, base_token_from_buyer, target_price, timestamp, is_mm=False):
-        base_token_from_buyer -= self.fee_rate * base_token_from_buyer
-        self.base_token_in_pool += base_token_from_buyer
-        p_token_price = base_token_from_buyer / (self.p_token_in_pool - self.supply_invariant / self.base_token_in_pool)
+        fee = abs(self.fee_rate * base_token_from_buyer)
+        if is_mm:
+            self.mm_total_fee += fee
+        else:
+            self.auto_total_fee += fee
+        self.total_fee += fee
+        base_token_from_buyer_without_fee = min([base_token_from_buyer - fee, base_token_from_buyer + fee], key=abs)
+        self.base_token_in_pool += base_token_from_buyer_without_fee
+        p_token_price = base_token_from_buyer_without_fee / (self.p_token_in_pool - self.supply_invariant / self.base_token_in_pool)
         base_token_price = 1 / p_token_price
         p_token_to_buyer = - base_token_from_buyer / p_token_price
         self.p_token_in_pool += p_token_to_buyer
@@ -64,6 +77,8 @@ class AMM:
             self.p_token_in_pool,
             p_token_price,
             base_token_from_buyer,
+            base_token_from_buyer_without_fee,
+            fee,
             self.base_token_in_pool,
             base_token_price,
             None,
@@ -104,12 +119,21 @@ class AMM:
             self.mm_total_sell += trade.sell
             self.mm_total_pnl += trade.pnl
             self.mm_total_pnl_rate = self.mm_total_pnl / (self.mm_total_buy + self.mm_total_sell)
+            trade.rolled_pnl = self.mm_total_pnl
+            trade.rolled_buy = self.mm_total_buy
+            trade.rolled_sell = self.mm_total_sell
+        else:
+            self.auto_total_buy += trade.buy
+            self.auto_total_sell += trade.sell
+            self.auto_total_pnl += trade.pnl
+            self.auto_total_pnl_rate = self.auto_total_pnl / (self.auto_total_buy + self.auto_total_sell)
+            trade.rolled_pnl = self.auto_total_pnl
+            trade.rolled_buy = self.auto_total_buy
+            trade.rolled_sell = self.auto_total_sell
+
         self.total_buy += trade.buy
         self.total_sell += trade.sell
         self.total_pnl += trade.pnl
-        self.total_pnl_rate = self.total_pnl / (self.total_buy + self.total_sell)
+        self.total_pnl_rate = (self.mm_total_pnl + self.auto_total_pnl) / (self.mm_total_buy + self.mm_total_sell + self.auto_total_buy + self.auto_total_sell)
 
-        trade.rolled_pnl = self.total_pnl
-        trade.rolled_buy = self.total_buy
-        trade.rolled_sell = self.total_sell
         return trade
