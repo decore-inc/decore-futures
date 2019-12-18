@@ -3,23 +3,6 @@ from Trade import Trade
 
 
 class AMM:
-    trades = []
-    auto_total_buy = 0
-    auto_total_sell = 0
-    auto_total_pnl = 0
-    auto_total_pnl_rate = 0
-    auto_total_fee = 0
-    mm_total_buy = 0
-    mm_total_sell = 0
-    mm_total_pnl = 0
-    mm_total_pnl_rate = 0
-    mm_total_fee = 0
-    total_buy = 0
-    total_sell = 0
-    total_pnl = 0
-    total_pnl_rate = 0
-    total_fee = 0
-
     def __init__(self, init_base_token_in_pool, twap_price, delta, g, fee_rate):
         self.base_token_in_pool = init_base_token_in_pool
         self.twap_price = twap_price
@@ -29,6 +12,29 @@ class AMM:
         self.supply_invariant = self.base_token_in_pool * self.p_token_in_pool
         self.q = 0
         self.fee_rate = fee_rate
+        self.trades = []
+        self.auto_total_buy = 0
+        self.auto_total_sell = 0
+        self.auto_total_pnl = 0
+        self.auto_total_pnl_rate = 0
+        self.auto_total_fee = 0
+        self.mm_total_buy = 0
+        self.mm_total_sell = 0
+        self.mm_total_pnl = 0
+        self.mm_total_pnl_rate = 0
+        self.mm_total_fee = 0
+        self.total_buy = 0
+        self.total_sell = 0
+        self.total_pnl = 0
+        self.total_pnl_rate = 0
+        self.total_fee = 0
+
+    def __str__(self):
+        string = ''
+        for key in self.__dict__.keys():
+            if key != 'trades':
+                string += f'{key}: {self.__dict__[key]}\n'
+        return string
 
     def make_trade(self, base_token_from_buyer, target_price, timestamp, is_mm=False):
         trade = self._bonding_curve(base_token_from_buyer, target_price, timestamp, is_mm)
