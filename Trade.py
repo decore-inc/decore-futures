@@ -16,7 +16,8 @@ class Trade:
                  rolled_buy,
                  rolled_sell,
                  is_mm,
-                 target_price):
+                 target_price,
+                 q):
         self.p_token_to_buyer = p_token_to_buyer
         self.p_token_in_pool = p_token_in_pool
         self.p_token_price = p_token_price
@@ -34,5 +35,6 @@ class Trade:
         self.rolled_sell = rolled_sell
         self.is_mm = is_mm
         self.target_price = target_price
+        self.q = q
 
 

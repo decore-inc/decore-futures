@@ -5,8 +5,8 @@ import numpy as np
 class AMMFactory:
 
     @classmethod
-    def create_AMM(cls, source_symbol, init_base_token_in_pool, twap_price, delta, g, limit=None):
-        amm = AMM(init_base_token_in_pool, twap_price, delta, g)
+    def create_AMM(cls, source_symbol, init_base_token_in_pool, twap_price, delta, g, fee_rate, limit=None):
+        amm = AMM(init_base_token_in_pool, twap_price, delta, g, fee_rate)
         chunksize = 10 ** 8  # processing 10 ** 8 rows at a time
         count = 0
         for chunk in pd.read_csv(f'sources/{source_symbol}.csv', chunksize=chunksize):
@@ -35,6 +35,8 @@ class AMMFactory:
             columns=keys)
         init_base_token_in_pool = '{:.2e}'.format(init_base_token_in_pool)
         twap_price = '{:.2e}'.format(twap_price)
-        output_filename = f'{source_symbol}-base_token_in_pool={init_base_token_in_pool}-TWAP={twap_price}-delta={delta}-G={g}'
+        fee_rate = '{:.2e}'.format(fee_rate)
+        output_filename = f'{source_symbol}-base_token_in_pool={init_base_token_in_pool}-TWAP={twap_price}-delta={delta}-G={g}-fee={fee_rate}'
         df2.to_csv(f'results/{output_filename}.csv',index=None, header=True)
         print(f'Output file: {output_filename}.csv')
+        print(amm.__dict__)

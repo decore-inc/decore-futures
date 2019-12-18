@@ -5,6 +5,7 @@ init_base_token_in_pool = 10 ** 8
 twap_price = 3602
 delta = 0.002
 g = 0.01
+fee_rate = 0.05 * 10 ** -2
 limit = 100
 
 # source_symbol = input(f'source_symbol({source_symbol}): ')
@@ -19,6 +20,7 @@ print(f'init_base_token_in_pool: {init_base_token_in_pool}')
 print(f'twap_price: {twap_price}')
 print(f'delta: {delta}')
 print(f'G: {g}')
+print(f'fee_rate: {fee_rate}')
 print(f'limit: {limit}')
 
-AMMFactory.create_AMM(source_symbol, init_base_token_in_pool, twap_price, delta, g, limit)
+AMMFactory.create_AMM(source_symbol, init_base_token_in_pool, twap_price, delta, g, fee_rate, limit)
