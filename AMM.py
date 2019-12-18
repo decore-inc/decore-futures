@@ -46,21 +46,17 @@ class AMM:
     def market_maker(self, target_price, timestamp):
         """
         Market maker should buy or sell mm_p_token_to_buyer to let market price near to the target_price.
-        To get mm_p_token_to_buyer as X from formulas below:
-        target_price = mm_base_token_from_buyer /( (p_token_in_pool - supply_invariant / (base_token_in_pool + mm_base_token_from_buyer)))
-        Resolve this Quadratic Equation: aX^2 + bX + c = 0
-        X**2 + (base_token_in_pool - p_token_in_pool * target_price) * X - p_token_in_pool * target_price * base_token_in_pool + supply_invariant * target_price = 0
+        p_token_price = base_token_in_pool / (mm_p_token_to_buyer + p_token_in_pool)
+        mm_p_token_to_buyer* = base_token_in_pool / p_token_price - p_token_in_pool
+        but the mm_p_token_to_buyer* we have here is actually based on the average price
+        we divide the token amount in half for now
         """
-        a = 1
-        b = self.base_token_in_pool - self.p_token_in_pool * target_price
-        c = - self.p_token_in_pool * target_price * self.base_token_in_pool + self.supply_invariant * target_price
-
-        _result = sqrt(abs(b ** 2 - (4 * a * c)))
-        results = [(-b + _result) / (2 * a), (-b - _result) / (2 * a)]
-        mm_base_token_from_buyer = min(results, key=abs)
-        mm_base_token_from_buyer = round(mm_base_token_from_buyer)
-        if mm_base_token_from_buyer != 0:
-            self.make_trade(mm_base_token_from_buyer, target_price, timestamp, True)
+        mm_p_token_to_buyer = (self.base_token_in_pool / target_price - self.p_token_in_pool) / 2
+        mm_base_token_from_buyer = self.supply_invariant / (
+                self.p_token_in_pool + mm_p_token_to_buyer) - self.base_token_in_pool
+        mm_base_token_from_buyer_with_fee = mm_base_token_from_buyer * (1 + self.fee_rate)
+        if mm_base_token_from_buyer_with_fee != 0:
+            self.make_trade(mm_base_token_from_buyer_with_fee, target_price, timestamp, True)
 
     def _bonding_curve(self, base_token_from_buyer, target_price, timestamp, is_mm=False):
         fee = abs(self.fee_rate * base_token_from_buyer)
@@ -70,10 +66,14 @@ class AMM:
             self.auto_total_fee += fee
         self.total_fee += fee
         base_token_from_buyer_without_fee = min([base_token_from_buyer - fee, base_token_from_buyer + fee], key=abs)
-        self.base_token_in_pool += base_token_from_buyer_without_fee
-        p_token_price = base_token_from_buyer_without_fee / (self.p_token_in_pool - self.supply_invariant / self.base_token_in_pool)
+        """
+        p_token_to_buyer = supply_invariant / (base_token_in_pool + base_token_from_buyer) - p_token_in_pool
+        """
+        p_token_to_buyer = self.supply_invariant / (
+                self.base_token_in_pool + base_token_from_buyer_without_fee) - self.p_token_in_pool
+        p_token_price = abs(base_token_from_buyer_without_fee / p_token_to_buyer)
         base_token_price = 1 / p_token_price
-        p_token_to_buyer = - base_token_from_buyer / p_token_price
+        self.base_token_in_pool += base_token_from_buyer_without_fee
         self.p_token_in_pool += p_token_to_buyer
         return Trade(
             p_token_to_buyer,
@@ -101,7 +101,7 @@ class AMM:
     def _ans_model(self, trade):
         self.q -= trade.p_token_to_buyer
         _q = (self.q * trade.p_token_price - self.base_token_in_pool) / (
-                    self.q * trade.p_token_price + self.base_token_in_pool)
+                self.q * trade.p_token_price + self.base_token_in_pool)
         trade.long_p_token_price = trade.p_token_price * (1.0 - _q * self.g + self.delta)
         trade.short_p_token_price = trade.p_token_price * (1.0 - _q * self.g - self.delta)
         trade.q = self.q
@@ -137,6 +137,7 @@ class AMM:
         self.total_buy += trade.buy
         self.total_sell += trade.sell
         self.total_pnl += trade.pnl
-        self.total_pnl_rate = (self.mm_total_pnl + self.auto_total_pnl) / (self.mm_total_buy + self.mm_total_sell + self.auto_total_buy + self.auto_total_sell)
+        self.total_pnl_rate = (self.mm_total_pnl + self.auto_total_pnl) / (
+                self.mm_total_buy + self.mm_total_sell + self.auto_total_buy + self.auto_total_sell)
 
         return trade
