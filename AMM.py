@@ -10,7 +10,7 @@ class AMM:
         self.g = g
         self.p_token_in_pool = self.base_token_in_pool / twap_price
         self.supply_invariant = self.base_token_in_pool * self.p_token_in_pool
-        self.q = 0
+        self.q = self.p_token_in_pool
         self.fee_rate = fee_rate
         self.trades = []
         self.auto_total_buy = 0
