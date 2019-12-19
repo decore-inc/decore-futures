@@ -3,12 +3,14 @@ from Trade import Trade
 
 
 class AMM:
+    safe_p_token_rate = 0.001
     def __init__(self, init_base_token_in_pool, twap_price, delta, g, fee_rate):
         self.base_token_in_pool = init_base_token_in_pool
         self.twap_price = twap_price
         self.delta = delta
         self.g = g
-        self.p_token_in_pool = self.base_token_in_pool / twap_price
+        self.init_p_token_in_pool = self.base_token_in_pool / twap_price
+        self.p_token_in_pool = self.init_p_token_in_pool
         self.supply_invariant = self.base_token_in_pool * self.p_token_in_pool
         self.q = self.p_token_in_pool
         self.fee_rate = fee_rate
@@ -75,6 +77,11 @@ class AMM:
         base_token_price = 1 / p_token_price
         self.base_token_in_pool += base_token_from_buyer_without_fee
         self.p_token_in_pool += p_token_to_buyer
+        if self.p_token_in_pool < 0:
+            raise ValueError(f'p_token_in_pool({self.p_token_in_pool}) is less than 0, timestamp: {timestamp}')
+        if abs(self.p_token_in_pool) / self.init_p_token_in_pool < self.safe_p_token_rate:
+            raise ValueError(f'p_token_in_pool({self.p_token_in_pool}) is less than safe_p_token_rate({self.safe_p_token_rate}) of init_p_token_in_pool(){self.init_p_token_in_pool}), timestamp: {timestamp}')
+
         return Trade(
             p_token_to_buyer,
             self.p_token_in_pool,

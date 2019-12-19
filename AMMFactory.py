@@ -18,6 +18,9 @@ class AMMFactory:
                 if (limit is not None) and (limit > 0) and (count >= limit):
                     break
                 side = value[1]
+                if side is None:
+                    print(f'side is null: {value}')
+                    continue
                 p_token_to_buyer = -value[0] if side == 'Buy' else value[0]  # Negative if Buy
                 target_price = value[2]
                 timestamp = value[3]
