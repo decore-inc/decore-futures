@@ -30,11 +30,11 @@ class AMM:
         self.total_fee = 0
 
     def __str__(self):
-        string = ''
+        key_values = []
         for key in self.__dict__.keys():
             if key != 'trades':
-                string += f'{key}: {self.__dict__[key]}\n'
-        return string
+                key_values.append(f'"{key}": "{self.__dict__[key]}"')
+        return '{' + ', '.join(key_values) + '}'
 
     def make_trade(self, base_token_from_buyer, target_price, timestamp, is_mm=False):
         trade = self._bonding_curve(base_token_from_buyer, target_price, timestamp, is_mm)

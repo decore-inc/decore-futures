@@ -5,11 +5,6 @@ import pandas as pd
 
 class AMMFactory:
 
-    # def __init__(self, source_symbol):
-    #     chunksize = 10 ** 8  # processing 10 ** 8 rows at a time
-    #     self.chunks = pd.read_csv(f'sources/{source_symbol}.csv', chunksize=chunksize)
-    #     self.source_symbol = source_symbol
-
     def create_AMM(self, source_symbol, init_base_token_in_pool, twap_price, delta, g, fee_rate, limit=None):
         amm = AMM(init_base_token_in_pool, twap_price, delta, g, fee_rate)
         count = 0
@@ -20,7 +15,7 @@ class AMMFactory:
             df = pd.DataFrame(chunk, columns=['size', 'side', 'price', 'timestamp'])
             if len(df.values) == 0: raise ValueError("Trade length is Zero, there is no output csv.")
             for value in df.sort_values(by=['timestamp']).values:
-                if (limit is not None) and (limit > 0) and (count > limit):
+                if (limit is not None) and (limit > 0) and (count >= limit):
                     break
                 side = value[1]
                 p_token_to_buyer = -value[0] if side == 'Buy' else value[0]  # Negative if Buy
@@ -39,10 +34,8 @@ class AMMFactory:
             data_frame,
             columns=keys)
         init_base_token_in_pool = '{:.2e}'.format(init_base_token_in_pool)
-        twap_price = '{:.2e}'.format(twap_price)
-        fee_rate = '{:.2e}'.format(fee_rate)
         output_filename = f'{source_symbol}-base_token_in_pool={init_base_token_in_pool}-TWAP={twap_price}-delta={delta}-G={g}-fee={fee_rate}'
-        df2.to_csv(f'results/{output_filename}.csv', index=None, header=True)
+        df2.to_csv(f'results/{source_symbol}/{output_filename}.csv', index=None, header=True)
         print(f'Output file: {output_filename}.csv, Process duration time: {datetime.now() - start_time}')
         print(amm)
         return amm
