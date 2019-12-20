@@ -32,8 +32,10 @@ class AMM:
         self.total_pnl = 0
         self.total_pnl_rate = 0
         self.total_fee = 0
-        self.max_mm_pnl = 0
-        self.max_total_pnl = 0
+        self.max_mm_rolled_pnl = 0
+        self.max_total_rolled_pnl = 0
+        self.max_confidence_mm_rolled_pnl = 0
+        self.max_confidence_total_rolled_pnl = 0
 
     def __str__(self):
         key_values = []
@@ -64,15 +66,20 @@ class AMM:
         if mm_base_token_from_buyer_with_fee != 0:
             self.make_trade(mm_base_token_from_buyer_with_fee, target_price, timestamp, True)
 
-    def calculate_max_pnl(self):
+    def calculate_max_rolled_pnl(self):
         confidence = 0.95
-        mean, min, max = self._mean_confidence_interval(
-            [abs(trade.pnl) for trade in filter(lambda x: x.is_mm, self.trades)], confidence)
-        print(f'{confidence * 100}% total_pnl = mean:{mean}, min:{min}, max:{max}')
-        self.max_total_pnl = max
-        mean, min, max = self._mean_confidence_interval([abs(trade.pnl) for trade in self.trades], confidence)
-        print(f'{confidence * 100}% mm_pnl = mean:{mean}, min:{min}, max:{max}')
-        self.max_mm_pnl = max
+        mm_trades_rolled_pnl = [abs(trade.rolled_pnl) for trade in filter(lambda x: x.is_mm, self.trades)]
+        trades_rolled_pnl = [abs(trade.rolled_pnl) for trade in self.trades]
+        self.max_total_rolled_pnl = max(trades_rolled_pnl)
+        self.max_mm_rolled_pnl = max(mm_trades_rolled_pnl)
+
+        _mean, _min, _max = self._mean_confidence_interval(trades_rolled_pnl, confidence)
+        print(f'{confidence * 100}% total_pnl = mean:{_mean}, min:{_min}, max:{_max}')
+        self.max_confidence_total_rolled_pnl = _max
+
+        _mean, _min, _max = self._mean_confidence_interval(mm_trades_rolled_pnl, confidence)
+        print(f'{confidence * 100}% mm_pnl = mean:{_mean}, min:{_min}, max:{_max}')
+        self.max_confidence_mm_rolled_pnl = _max
 
     def _mean_confidence_interval(self, data, confidence):
         a = 1.0 * np.array(data)
