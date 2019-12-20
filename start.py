@@ -5,12 +5,12 @@ from AMMFactory import AMMFactory
 def run_simulations():
     source_symbol = 'XBTH19'
     twap_price = 6850
-    fee_rate = 0 # 0.05 * 10 ** -2
+    fee_rate = 0.05 * 10 ** -2 # 0.05 * 10 ** -2
     limit = None # None if unlimited
 
-    init_base_token_in_pool_list = [10 ** 10, 10 ** 8, 10 ** 6]
-    delta_list = [0]
-    g_list = [0]
+    init_base_token_in_pool_list = [10 ** 7, 10 ** 8, 10 ** 9]
+    delta_list = [0.001, 0.002]
+    g_list = [0.01, 0.001]
 
     amm_factory = AMMFactory()
     data = []
@@ -26,6 +26,7 @@ def run_simulations():
                 print(f'limit: {limit}')
                 amm = amm_factory.create_AMM(source_symbol, init_base_token_in_pool, twap_price, delta, g, fee_rate, limit)
                 amm.init_base_token_in_pool = init_base_token_in_pool
+                amm.calculate_max_pnl()
                 amm.trades = len(amm.trades)
                 data.append(amm.__dict__)
     df = pd.DataFrame(data)

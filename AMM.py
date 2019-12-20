@@ -1,9 +1,11 @@
-from math import sqrt
+import numpy as np
+import scipy.stats
 from Trade import Trade
 
 
 class AMM:
     safe_p_token_rate = 0.001
+
     def __init__(self, init_base_token_in_pool, twap_price, delta, g, fee_rate):
         self.base_token_in_pool = init_base_token_in_pool
         self.twap_price = twap_price
@@ -30,6 +32,8 @@ class AMM:
         self.total_pnl = 0
         self.total_pnl_rate = 0
         self.total_fee = 0
+        self.max_mm_pnl = 0
+        self.max_total_pnl = 0
 
     def __str__(self):
         key_values = []
@@ -59,6 +63,23 @@ class AMM:
         mm_base_token_from_buyer_with_fee = mm_base_token_from_buyer * (1 + self.fee_rate)
         if mm_base_token_from_buyer_with_fee != 0:
             self.make_trade(mm_base_token_from_buyer_with_fee, target_price, timestamp, True)
+
+    def calculate_max_pnl(self):
+        confidence = 0.95
+        mean, min, max = self._mean_confidence_interval(
+            [abs(trade.pnl) for trade in filter(lambda x: x.is_mm, self.trades)], confidence)
+        print(f'{confidence * 100}% total_pnl = mean:{mean}, min:{min}, max:{max}')
+        self.max_total_pnl = max
+        mean, min, max = self._mean_confidence_interval([abs(trade.pnl) for trade in self.trades], confidence)
+        print(f'{confidence * 100}% mm_pnl = mean:{mean}, min:{min}, max:{max}')
+        self.max_mm_pnl = max
+
+    def _mean_confidence_interval(self, data, confidence):
+        a = 1.0 * np.array(data)
+        n = len(a)
+        m, se = np.mean(a), scipy.stats.sem(a)
+        h = se * scipy.stats.t.ppf((1 + confidence) / 2., n - 1)
+        return m, m - h, m + h
 
     def _bonding_curve(self, base_token_from_buyer, target_price, timestamp, is_mm=False):
         fee = abs(self.fee_rate * base_token_from_buyer)
