@@ -15,8 +15,8 @@ class Trade:
                  sell,
                  timestamp,
                  rolled_pnl,
-                 rolled_buy,
-                 rolled_sell,
+                 mm_rolled_pnl,
+                 auto_rolled_pnl,
                  is_mm,
                  target_price,
                  q):
@@ -36,8 +36,8 @@ class Trade:
         self.sell = sell
         self.timestamp = timestamp
         self.rolled_pnl = rolled_pnl
-        self.rolled_buy = rolled_buy
-        self.rolled_sell = rolled_sell
+        self.mm_rolled_pnl = mm_rolled_pnl
+        self.auto_rolled_pnl = auto_rolled_pnl
         self.is_mm = is_mm
         self.q = q
 

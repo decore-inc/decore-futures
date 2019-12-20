@@ -33,8 +33,10 @@ class AMM:
         self.total_pnl_rate = 0
         self.total_fee = 0
         self.max_mm_rolled_pnl = 0
+        self.max_auto_rolled_pnl = 0
         self.max_total_rolled_pnl = 0
         self.max_confidence_mm_rolled_pnl = 0
+        self.max_confidence_auto_rolled_pnl = 0
         self.max_confidence_total_rolled_pnl = 0
 
     def __str__(self):
@@ -68,10 +70,12 @@ class AMM:
 
     def calculate_max_rolled_pnl(self):
         confidence = 0.95
-        mm_trades_rolled_pnl = [abs(trade.rolled_pnl) for trade in filter(lambda x: x.is_mm, self.trades)]
+        mm_trades_rolled_pnl = [abs(trade.mm_rolled_pnl) for trade in self.trades]
+        auto_trades_rolled_pnl = [abs(trade.auto_rolled_pnl) for trade in self.trades]
         trades_rolled_pnl = [abs(trade.rolled_pnl) for trade in self.trades]
         self.max_total_rolled_pnl = max(trades_rolled_pnl)
         self.max_mm_rolled_pnl = max(mm_trades_rolled_pnl)
+        self.max_auto_rolled_pnl = max(auto_trades_rolled_pnl)
 
         _mean, _min, _max = self._mean_confidence_interval(trades_rolled_pnl, confidence)
         print(f'{confidence * 100}% total_pnl = mean:{_mean}, min:{_min}, max:{_max}')
@@ -80,6 +84,10 @@ class AMM:
         _mean, _min, _max = self._mean_confidence_interval(mm_trades_rolled_pnl, confidence)
         print(f'{confidence * 100}% mm_pnl = mean:{_mean}, min:{_min}, max:{_max}')
         self.max_confidence_mm_rolled_pnl = _max
+
+        _mean, _min, _max = self._mean_confidence_interval(auto_trades_rolled_pnl, confidence)
+        print(f'{confidence * 100}% auto_pnl = mean:{_mean}, min:{_min}, max:{_max}')
+        self.max_confidence_auto_rolled_pnl = _max
 
     def _mean_confidence_interval(self, data, confidence):
         a = 1.0 * np.array(data)
@@ -108,7 +116,8 @@ class AMM:
         if self.p_token_in_pool < 0:
             raise ValueError(f'p_token_in_pool({self.p_token_in_pool}) is less than 0, timestamp: {timestamp}')
         if abs(self.p_token_in_pool) / self.init_p_token_in_pool < self.safe_p_token_rate:
-            raise ValueError(f'p_token_in_pool({self.p_token_in_pool}) is less than safe_p_token_rate({self.safe_p_token_rate}) of init_p_token_in_pool(){self.init_p_token_in_pool}), timestamp: {timestamp}')
+            raise ValueError(
+                f'p_token_in_pool({self.p_token_in_pool}) is less than safe_p_token_rate({self.safe_p_token_rate}) of init_p_token_in_pool(){self.init_p_token_in_pool}), timestamp: {timestamp}')
 
         return Trade(
             p_token_to_buyer,
@@ -157,22 +166,19 @@ class AMM:
             self.mm_total_sell += trade.sell
             self.mm_total_pnl += trade.pnl
             self.mm_total_pnl_rate = self.mm_total_pnl / (self.mm_total_buy + self.mm_total_sell)
-            trade.rolled_pnl = self.mm_total_pnl
-            trade.rolled_buy = self.mm_total_buy
-            trade.rolled_sell = self.mm_total_sell
+            trade.mm_rolled_pnl = self.mm_total_pnl
         else:
             self.auto_total_buy += trade.buy
             self.auto_total_sell += trade.sell
             self.auto_total_pnl += trade.pnl
             self.auto_total_pnl_rate = self.auto_total_pnl / (self.auto_total_buy + self.auto_total_sell)
-            trade.rolled_pnl = self.auto_total_pnl
-            trade.rolled_buy = self.auto_total_buy
-            trade.rolled_sell = self.auto_total_sell
+            trade.auto_rolled_pnl = self.auto_total_pnl
 
         self.total_buy += trade.buy
         self.total_sell += trade.sell
         self.total_pnl += trade.pnl
         self.total_pnl_rate = (self.mm_total_pnl + self.auto_total_pnl) / (
                 self.mm_total_buy + self.mm_total_sell + self.auto_total_buy + self.auto_total_sell)
+        trade.rolled_pnl = self.total_pnl
 
         return trade
