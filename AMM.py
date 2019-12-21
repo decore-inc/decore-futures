@@ -38,6 +38,10 @@ class AMM:
         self.max_confidence_mm_rolled_pnl = 0
         self.max_confidence_auto_rolled_pnl = 0
         self.max_confidence_total_rolled_pnl = 0
+        self.max_unrealized_pnl = 0
+        self.max_confidence_unrealized_pnl = 0
+        self.max_realized_unrealized_pnl = 0
+        self.max_confidence_realized_unrealized_pnl = 0
 
     def __str__(self):
         key_values = []
@@ -73,21 +77,28 @@ class AMM:
         mm_trades_rolled_pnl = [abs(trade.mm_rolled_pnl) for trade in self.trades]
         auto_trades_rolled_pnl = [abs(trade.auto_rolled_pnl) for trade in self.trades]
         trades_rolled_pnl = [abs(trade.rolled_pnl) for trade in self.trades]
+        trades_unrealized_pnl = [abs(trade.unrealized_pnl) for trade in self.trades]
+        trades_realized_unrealized_pnl = [abs(trade.rolled_pnl + trade.unrealized_pnl) for trade in self.trades]
         self.max_total_rolled_pnl = max(trades_rolled_pnl)
         self.max_mm_rolled_pnl = max(mm_trades_rolled_pnl)
         self.max_auto_rolled_pnl = max(auto_trades_rolled_pnl)
+        self.max_unrealized_pnl = max(trades_unrealized_pnl)
+        self.max_realized_unrealized_pnl = max(trades_realized_unrealized_pnl)
 
         _mean, _min, _max = self._mean_confidence_interval(trades_rolled_pnl, confidence)
-        print(f'{confidence * 100}% total_pnl = mean:{_mean}, min:{_min}, max:{_max}')
         self.max_confidence_total_rolled_pnl = _max
 
         _mean, _min, _max = self._mean_confidence_interval(mm_trades_rolled_pnl, confidence)
-        print(f'{confidence * 100}% mm_pnl = mean:{_mean}, min:{_min}, max:{_max}')
         self.max_confidence_mm_rolled_pnl = _max
 
         _mean, _min, _max = self._mean_confidence_interval(auto_trades_rolled_pnl, confidence)
-        print(f'{confidence * 100}% auto_pnl = mean:{_mean}, min:{_min}, max:{_max}')
         self.max_confidence_auto_rolled_pnl = _max
+
+        _mean, _min, _max = self._mean_confidence_interval(trades_unrealized_pnl, confidence)
+        self.max_confidence_unrealized_pnl = _max
+
+        _mean, _min, _max = self._mean_confidence_interval(trades_realized_unrealized_pnl, confidence)
+        self.max_confidence_realized_unrealized_pnl = _max
 
     def _mean_confidence_interval(self, data, confidence):
         a = 1.0 * np.array(data)
@@ -139,7 +150,8 @@ class AMM:
             0,
             is_mm,
             target_price,
-            None
+            None,
+            0
         )
 
     def _ans_model(self, trade):
@@ -149,6 +161,7 @@ class AMM:
         trade.long_p_token_price = trade.p_token_price * (1.0 - _q * self.g + self.delta)
         trade.short_p_token_price = trade.p_token_price * (1.0 - _q * self.g - self.delta)
         trade.q = self.q
+        trade.unrealized_pnl = self.q * trade.p_token_price
         return trade
 
     def _pnl(self, trade):
