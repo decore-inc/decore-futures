@@ -1,5 +1,7 @@
 import numpy as np
 import scipy.stats
+
+from TokenPool import TokenPool
 from Trade import Trade
 
 
@@ -42,6 +44,10 @@ class AMM:
         self.max_confidence_unrealized_pnl = 0
         self.max_realized_unrealized_pnl = 0
         self.max_confidence_realized_unrealized_pnl = 0
+        self.auto_pool = TokenPool()
+        self.mm_pool = TokenPool()
+        self.mm_rolled_pnl = 0
+        self.auto_rolled_pnl = 0
 
     def __str__(self):
         key_values = []
@@ -77,13 +83,9 @@ class AMM:
         mm_trades_rolled_pnl = [abs(trade.mm_rolled_pnl) for trade in self.trades]
         auto_trades_rolled_pnl = [abs(trade.auto_rolled_pnl) for trade in self.trades]
         trades_rolled_pnl = [abs(trade.rolled_pnl) for trade in self.trades]
-        trades_unrealized_pnl = [abs(trade.unrealized_pnl) for trade in self.trades]
-        trades_realized_unrealized_pnl = [abs(trade.rolled_pnl + trade.unrealized_pnl) for trade in self.trades]
         self.max_total_rolled_pnl = max(trades_rolled_pnl)
         self.max_mm_rolled_pnl = max(mm_trades_rolled_pnl)
         self.max_auto_rolled_pnl = max(auto_trades_rolled_pnl)
-        self.max_unrealized_pnl = max(trades_unrealized_pnl)
-        self.max_realized_unrealized_pnl = max(trades_realized_unrealized_pnl)
 
         _mean, _min, _max = self._mean_confidence_interval(trades_rolled_pnl, confidence)
         self.max_confidence_total_rolled_pnl = _max
@@ -94,13 +96,8 @@ class AMM:
         _mean, _min, _max = self._mean_confidence_interval(auto_trades_rolled_pnl, confidence)
         self.max_confidence_auto_rolled_pnl = _max
 
-        _mean, _min, _max = self._mean_confidence_interval(trades_unrealized_pnl, confidence)
-        self.max_confidence_unrealized_pnl = _max
-
-        _mean, _min, _max = self._mean_confidence_interval(trades_realized_unrealized_pnl, confidence)
-        self.max_confidence_realized_unrealized_pnl = _max
-
-    def _mean_confidence_interval(self, data, confidence):
+    @staticmethod
+    def _mean_confidence_interval(data, confidence):
         a = 1.0 * np.array(data)
         n = len(a)
         m, se = np.mean(a), scipy.stats.sem(a)
@@ -128,7 +125,8 @@ class AMM:
             raise ValueError(f'p_token_in_pool({self.p_token_in_pool}) is less than 0, timestamp: {timestamp}')
         if abs(self.p_token_in_pool) / self.init_p_token_in_pool < self.safe_p_token_rate:
             raise ValueError(
-                f'p_token_in_pool({self.p_token_in_pool}) is less than safe_p_token_rate({self.safe_p_token_rate}) of init_p_token_in_pool(){self.init_p_token_in_pool}), timestamp: {timestamp}')
+                f'p_token_in_pool({self.p_token_in_pool}) is less than safe_p_token_rate({self.safe_p_token_rate}) '
+                f'of init_p_token_in_pool(){self.init_p_token_in_pool}), timestamp: {timestamp}')
 
         return Trade(
             p_token_to_buyer,
@@ -150,8 +148,7 @@ class AMM:
             0,
             is_mm,
             target_price,
-            None,
-            0
+            None
         )
 
     def _ans_model(self, trade):
@@ -161,37 +158,40 @@ class AMM:
         trade.long_p_token_price = trade.p_token_price * (1.0 - _q * self.g + self.delta)
         trade.short_p_token_price = trade.p_token_price * (1.0 - _q * self.g - self.delta)
         trade.q = self.q
-        trade.unrealized_pnl = self.q * trade.p_token_price
         return trade
 
     def _pnl(self, trade):
-        isBuy = trade.p_token_to_buyer < 0
-        if isBuy:
+        is_buy = trade.p_token_to_buyer < 0
+        if is_buy:
             trade.pnl = trade.p_token_to_buyer * trade.long_p_token_price
         else:
             trade.pnl = trade.p_token_to_buyer * trade.short_p_token_price
 
-        trade.buy = -trade.pnl if isBuy else 0
-        trade.sell = trade.pnl if not isBuy else 0
+        trade.buy = -trade.pnl if is_buy else 0
+        trade.sell = trade.pnl if not is_buy else 0
 
         if trade.is_mm:
             self.mm_total_buy += trade.buy
             self.mm_total_sell += trade.sell
             self.mm_total_pnl += trade.pnl
             self.mm_total_pnl_rate = self.mm_total_pnl / (self.mm_total_buy + self.mm_total_sell)
-            trade.mm_rolled_pnl = self.mm_total_pnl
+            self.mm_pool.trade(trade.p_token_to_buyer, trade.p_token_price)
         else:
             self.auto_total_buy += trade.buy
             self.auto_total_sell += trade.sell
             self.auto_total_pnl += trade.pnl
             self.auto_total_pnl_rate = self.auto_total_pnl / (self.auto_total_buy + self.auto_total_sell)
-            trade.auto_rolled_pnl = self.auto_total_pnl
+            self.auto_pool.trade(trade.p_token_to_buyer, trade.p_token_price)
 
         self.total_buy += trade.buy
         self.total_sell += trade.sell
         self.total_pnl += trade.pnl
         self.total_pnl_rate = (self.mm_total_pnl + self.auto_total_pnl) / (
                 self.mm_total_buy + self.mm_total_sell + self.auto_total_buy + self.auto_total_sell)
-        trade.rolled_pnl = self.total_pnl
+        trade.mm_rolled_pnl = self.mm_pool.realized_pnl + self.mm_pool.unrealized_pnl(trade.p_token_price)
+        self.mm_rolled_pnl = trade.mm_rolled_pnl
+        trade.auto_rolled_pnl = self.auto_pool.realized_pnl + self.auto_pool.unrealized_pnl(trade.p_token_price)
+        self.auto_rolled_pnl = trade.auto_rolled_pnl
+        trade.rolled_pnl = trade.mm_rolled_pnl + trade.auto_rolled_pnl
 
         return trade

@@ -19,8 +19,7 @@ class Trade:
                  auto_rolled_pnl,
                  is_mm,
                  target_price,
-                 q,
-                 unrealized_pnl):
+                 q):
         self.p_token_to_buyer = p_token_to_buyer
         self.p_token_in_pool = p_token_in_pool
         self.p_token_price = p_token_price
@@ -41,6 +40,5 @@ class Trade:
         self.auto_rolled_pnl = auto_rolled_pnl
         self.is_mm = is_mm
         self.q = q
-        self.unrealized_pnl = unrealized_pnl
 
 
