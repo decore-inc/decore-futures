@@ -2,13 +2,15 @@ class TokenPool:
     def __init__(self):
         self.realized_pnl = 0
         self.trades = []
+        self.q = 0
+        self.pnl_diff = 0
 
     def trade(self, p_token_to_buyer, p_token_price):
         assert p_token_to_buyer != 0
 
         is_buy = p_token_to_buyer < 0
         if is_buy:
-            if self.q() <= 0:
+            if self.q <= 0:
                 self.trades.append(TokenPoolItem(p_token_to_buyer, p_token_price))
             else:
                 remaining = -p_token_to_buyer
@@ -28,7 +30,7 @@ class TokenPool:
                 if remaining > 0:
                     self.trades.append(TokenPoolItem(-remaining, p_token_price))
         else:
-            if self.q() >= 0:
+            if self.q >= 0:
                 self.trades.append(TokenPoolItem(p_token_to_buyer, p_token_price))
             else:
                 remaining = p_token_to_buyer
@@ -48,11 +50,11 @@ class TokenPool:
                 if remaining > 0:
                     self.trades.append(TokenPoolItem(remaining, p_token_price))
 
-    def unrealized_pnl(self, p_token_price):
-        return -sum(trade.p_token_to_buyer * (p_token_price - trade.p_token_price) for trade in self.trades)
+        self.q += p_token_to_buyer
+        self.pnl_diff += p_token_to_buyer * (0 - p_token_price)
 
-    def q(self):
-        return sum(trade.p_token_to_buyer for trade in self.trades)
+    def unrealized_pnl(self, p_token_price):
+        return -(p_token_price * self.q + self.pnl_diff + self.realized_pnl)
 
 
 class TokenPoolItem:

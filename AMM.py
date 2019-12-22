@@ -22,17 +22,14 @@ class AMM:
         self.auto_total_buy = 0
         self.auto_total_sell = 0
         self.auto_total_pnl = 0
-        self.auto_total_pnl_rate = 0
         self.auto_total_fee = 0
         self.mm_total_buy = 0
         self.mm_total_sell = 0
         self.mm_total_pnl = 0
-        self.mm_total_pnl_rate = 0
         self.mm_total_fee = 0
         self.total_buy = 0
         self.total_sell = 0
         self.total_pnl = 0
-        self.total_pnl_rate = 0
         self.total_fee = 0
         self.max_mm_rolled_pnl = 0
         self.max_auto_rolled_pnl = 0
@@ -40,14 +37,8 @@ class AMM:
         self.max_confidence_mm_rolled_pnl = 0
         self.max_confidence_auto_rolled_pnl = 0
         self.max_confidence_total_rolled_pnl = 0
-        self.max_unrealized_pnl = 0
-        self.max_confidence_unrealized_pnl = 0
-        self.max_realized_unrealized_pnl = 0
-        self.max_confidence_realized_unrealized_pnl = 0
         self.auto_pool = TokenPool()
         self.mm_pool = TokenPool()
-        self.mm_rolled_pnl = 0
-        self.auto_rolled_pnl = 0
 
     def __str__(self):
         key_values = []
@@ -173,25 +164,19 @@ class AMM:
         if trade.is_mm:
             self.mm_total_buy += trade.buy
             self.mm_total_sell += trade.sell
-            self.mm_total_pnl += trade.pnl
-            self.mm_total_pnl_rate = self.mm_total_pnl / (self.mm_total_buy + self.mm_total_sell)
             self.mm_pool.trade(trade.p_token_to_buyer, trade.p_token_price)
         else:
             self.auto_total_buy += trade.buy
             self.auto_total_sell += trade.sell
-            self.auto_total_pnl += trade.pnl
-            self.auto_total_pnl_rate = self.auto_total_pnl / (self.auto_total_buy + self.auto_total_sell)
             self.auto_pool.trade(trade.p_token_to_buyer, trade.p_token_price)
 
         self.total_buy += trade.buy
         self.total_sell += trade.sell
-        self.total_pnl += trade.pnl
-        self.total_pnl_rate = (self.mm_total_pnl + self.auto_total_pnl) / (
-                self.mm_total_buy + self.mm_total_sell + self.auto_total_buy + self.auto_total_sell)
         trade.mm_rolled_pnl = self.mm_pool.realized_pnl + self.mm_pool.unrealized_pnl(trade.p_token_price)
-        self.mm_rolled_pnl = trade.mm_rolled_pnl
+        self.mm_total_pnl = trade.mm_rolled_pnl
         trade.auto_rolled_pnl = self.auto_pool.realized_pnl + self.auto_pool.unrealized_pnl(trade.p_token_price)
-        self.auto_rolled_pnl = trade.auto_rolled_pnl
+        self.auto_total_pnl = trade.auto_rolled_pnl
         trade.rolled_pnl = trade.mm_rolled_pnl + trade.auto_rolled_pnl
+        self.total_pnl = trade.rolled_pnl
 
         return trade
