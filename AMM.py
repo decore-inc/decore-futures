@@ -33,10 +33,10 @@ class AMM:
         self.total_fee = 0
         self.max_mm_rolled_pnl = 0
         self.max_auto_rolled_pnl = 0
-        self.max_total_rolled_pnl = 0
+        self.min_total_rolled_pnl = 0
         self.max_confidence_mm_rolled_pnl = 0
         self.max_confidence_auto_rolled_pnl = 0
-        self.max_confidence_total_rolled_pnl = 0
+        self.min_confidence_total_rolled_pnl = 0
         self.auto_pool = TokenPool()
         self.mm_pool = TokenPool()
 
@@ -71,21 +71,21 @@ class AMM:
 
     def calculate_max_rolled_pnl(self):
         confidence = 0.95
-        mm_trades_rolled_pnl = [abs(trade.mm_rolled_pnl) for trade in self.trades]
-        auto_trades_rolled_pnl = [abs(trade.auto_rolled_pnl) for trade in self.trades]
-        trades_rolled_pnl = [abs(trade.rolled_pnl) for trade in self.trades]
-        self.max_total_rolled_pnl = max(trades_rolled_pnl)
+        mm_trades_rolled_pnl = [trade.mm_rolled_pnl for trade in self.trades]
+        auto_trades_rolled_pnl = [trade.auto_rolled_pnl for trade in self.trades]
+        trades_rolled_pnl = [trade.rolled_pnl for trade in self.trades]
         self.max_mm_rolled_pnl = max(mm_trades_rolled_pnl)
         self.max_auto_rolled_pnl = max(auto_trades_rolled_pnl)
-
-        _mean, _min, _max = self._mean_confidence_interval(trades_rolled_pnl, confidence)
-        self.max_confidence_total_rolled_pnl = _max
+        self.min_total_rolled_pnl = min(trades_rolled_pnl)
 
         _mean, _min, _max = self._mean_confidence_interval(mm_trades_rolled_pnl, confidence)
         self.max_confidence_mm_rolled_pnl = _max
 
         _mean, _min, _max = self._mean_confidence_interval(auto_trades_rolled_pnl, confidence)
         self.max_confidence_auto_rolled_pnl = _max
+
+        _mean, _min, _max = self._mean_confidence_interval(trades_rolled_pnl, confidence)
+        self.min_confidence_total_rolled_pnl = _min
 
     @staticmethod
     def _mean_confidence_interval(data, confidence):
@@ -154,8 +154,10 @@ class AMM:
     def _pnl(self, trade):
         is_buy = trade.p_token_to_buyer < 0
         if is_buy:
+            p_token_price = trade.long_p_token_price
             trade.pnl = trade.p_token_to_buyer * trade.long_p_token_price
         else:
+            p_token_price = trade.short_p_token_price
             trade.pnl = trade.p_token_to_buyer * trade.short_p_token_price
 
         trade.buy = -trade.pnl if is_buy else 0
@@ -164,19 +166,19 @@ class AMM:
         if trade.is_mm:
             self.mm_total_buy += trade.buy
             self.mm_total_sell += trade.sell
-            self.mm_pool.trade(trade.p_token_to_buyer, trade.p_token_price)
+            self.mm_pool.trade(trade.p_token_to_buyer, p_token_price)
         else:
             self.auto_total_buy += trade.buy
             self.auto_total_sell += trade.sell
-            self.auto_pool.trade(trade.p_token_to_buyer, trade.p_token_price)
+            self.auto_pool.trade(trade.p_token_to_buyer, p_token_price)
 
         self.total_buy += trade.buy
         self.total_sell += trade.sell
-        trade.mm_rolled_pnl = self.mm_pool.realized_pnl + self.mm_pool.unrealized_pnl(trade.p_token_price)
+        trade.mm_rolled_pnl = self.mm_pool.realized_pnl + self.mm_pool.unrealized_pnl(p_token_price)
         self.mm_total_pnl = trade.mm_rolled_pnl
-        trade.auto_rolled_pnl = self.auto_pool.realized_pnl + self.auto_pool.unrealized_pnl(trade.p_token_price)
+        trade.auto_rolled_pnl = self.auto_pool.realized_pnl + self.auto_pool.unrealized_pnl(p_token_price)
         self.auto_total_pnl = trade.auto_rolled_pnl
-        trade.rolled_pnl = trade.mm_rolled_pnl + trade.auto_rolled_pnl
+        trade.rolled_pnl = -(trade.mm_rolled_pnl + trade.auto_rolled_pnl)
         self.total_pnl = trade.rolled_pnl
 
         return trade
