@@ -3,3 +3,4 @@ venv/
 /sources/
 /__pycache__/
 /results/
+google-auth-key.json
