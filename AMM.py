@@ -143,11 +143,11 @@ class AMM:
         )
 
     def _ans_model(self, trade):
-        self.q -= trade.p_token_to_buyer
         _q = (self.q * trade.p_token_price - self.base_token_in_pool) / (
                 self.q * trade.p_token_price + self.base_token_in_pool)
         trade.long_p_token_price = trade.p_token_price * (1.0 - _q * self.g + self.delta)
         trade.short_p_token_price = trade.p_token_price * (1.0 - _q * self.g - self.delta)
+        self.q -= trade.p_token_to_buyer
         trade.q = self.q
         return trade
 
