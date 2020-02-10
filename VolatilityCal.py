@@ -10,7 +10,7 @@ class VolatilityCal:
         self.daily_twaps = []
         self.minutely_candles = []
         self.last_date_idx = None
-        self.last_volatility = None
+        self.volatility = None
         self.rolling_period = rolling_period
 
     def update(self, timestamp, price):
@@ -41,7 +41,7 @@ class VolatilityCal:
                 for i in range(-self.rolling_period, 0, 1):
                     log_return = np.log(self.daily_twaps[i].twap / self.daily_twaps[i - 1].twap)
                     log_returns.append(log_return)
-                self.last_volatility = statistics.stdev(log_returns) * np.math.sqrt(365)
+                self.volatility = statistics.stdev(log_returns) * np.math.sqrt(365)
 
         if _datetime.hour >= 23:
             if not self.minutely_candles:

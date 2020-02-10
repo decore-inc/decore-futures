@@ -72,7 +72,7 @@ class TestVolatilityCal(TestCase):
         self.assertEqual(vol_cal.daily_twaps.__len__(), 1)
         self.assertEqual(vol_cal.daily_twaps[-1].date_idx, "2017-04-27")
         self.assertEqual(vol_cal.daily_twaps[-1].twap, 0.03335)
-        self.assertTrue(not vol_cal.last_volatility)
+        self.assertTrue(not vol_cal.volatility)
 
     def test_update_volatility(self):
         vol_cal = VolatilityCal()
@@ -85,6 +85,6 @@ class TestVolatilityCal(TestCase):
         vol_cal.update("2017-04-07 23:03:09.306 UTC", 7.25)
         vol_cal.update("2017-04-08 23:03:09.306 UTC", 7.00)
         vol_cal.update("2017-04-09 23:03:09.306 UTC", 7.00)
-        self.assertEqual(vol_cal.last_volatility, 1.139230204054311)
+        self.assertEqual(vol_cal.volatility, 1.139230204054311)
 
 
