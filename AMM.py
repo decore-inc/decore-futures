@@ -151,6 +151,9 @@ class AMM:
         trade.q = self.q
         return trade
 
+    def _amm_fee_model(self, trade):
+        return trade
+
     def _pnl(self, trade):
         is_buy = trade.p_token_to_buyer < 0
         if is_buy:
